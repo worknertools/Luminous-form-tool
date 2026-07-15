@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <title>Type play</title>
+    
+
+  </head>
+    
+  <body>
+  <!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>艺术图形生成器 - 高级时尚印刷版</title>
+    <script async src="https://docs.opencv.org/4.5.4/opencv.js" onload="cvLoaded()"></script>
+    <style>
+        body { 
+            background: #f0f0f0; color: #333; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            margin: 0; padding: 0; display: flex; width: 100vw; height: 100vh; overflow: hidden; 
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .sidebar {
+            width: 360px; height: 100vh; 
+            background: #f0f0f0; color: #333;
+            display: flex; flex-direction: column; padding: 0; box-sizing: border-box;
+            border-right: 1px solid #ddd; z-index: 10; flex-shrink: 0;
+        }
+
+        .sidebar-content {
+            flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 20px;
+            padding: 30px 25px;
+        }
+        .sidebar-content::-webkit-scrollbar { width: 4px; }
+        .sidebar-content::-webkit-scrollbar-thumb { background: #ccc; border-radius: 2px; }
+
+        .panel { display: flex; flex-direction: column; gap: 20px; } 
+        .ctrl { display: flex; flex-direction: column; gap: 8px; } 
+
+        .ctrl label { 
+            font-size: 11px; color: #777; display: flex; justify-content: space-between;
+            align-items: center; text-transform: uppercase; letter-spacing: 1px;
+        }
+
+        .ratio-wrapper { display: flex; gap: 10px; align-items: center; }
+        .ratio-text { 
+            cursor: pointer; font-size: 10px; opacity: 0.3; transition: opacity 0.2s; color: #000; font-weight: bold;
+            padding: 2px 0; border: none; text-decoration: none; outline: none;
+        }
+        .ratio-text.active { opacity: 1; border: none; text-decoration: none; } 
+
+        .file-input-wrapper {
+            position: relative; display: flex; align-items: center; 
+            background: #000; border: 1px solid #000;
+            justify-content: center; 
+        }
+        .file-input-container {
+            padding: 12px 30px 12px 12px; font-size: 11px; flex: 1; cursor: pointer; 
+            color: #fff;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            text-align: center; text-transform: uppercase; min-width: 0;
+        }
+        .btn-clear {
+            position: absolute; right: 12px; color: #999; cursor: pointer; font-size: 14px; font-weight: bold; display: none; 
+        }
+
+        .export-group {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+        }
+        
+        .btn-white {
+            background: #000; color: #fff; border: none; padding: 12px; 
+            font-size: 10px; font-weight: 400; 
+            width: 100%; box-sizing: border-box; cursor: pointer; text-transform: uppercase;
+            transition: opacity 0.2s;
+        }
+        .btn-white:hover { opacity: 0.8; }
+
+        .btn-random {
+            background: #e0e0e0; color: #333; border: 1px solid #ccc; padding: 12px; 
+            font-size: 10px; font-weight: 300; 
+            width: 100%; box-sizing: border-box; cursor: pointer; text-transform: uppercase;
+            transition: all 0.2s; grid-column: 1 / 3; margin-top: 5px;
+            letter-spacing: 1px;
+        }
+        .btn-random:hover { background: #d6d6d6; color: #000; border-color: #bbb; }
+
+        .toggle-ctrl {
+            display: flex; align-items: center; justify-content: space-between;
+            background: #fff; padding: 10px; border: 1px solid #ccc; cursor: pointer;
+        }
+        .toggle-text { font-size: 10px; font-weight: 900; color: #999; }
+        .toggle-ctrl input { display: none; }
+        .toggle-ctrl input:checked + .toggle-text { color: #000; }
+
+        input[type="range"] {
+            -webkit-appearance: none; width: 100%; height: 2px; background: #ddd; margin: 4px 0 16px 0; outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 10px; height: 10px; border-radius: 50%; background: #333; cursor: pointer;
+        }
+
+        .color-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 5px; }
+        .color-unit { display: flex; flex-direction: column; gap: 4px; }
+        .extra-colors { display: none; } 
+        
+        .bg-ctrl-group { 
+            display: flex; background: #fff; height: 20px;
+            align-items: center; width: 100%; border: 1px solid #ccc; overflow: hidden;
+        }
+        .color-block { flex: 1; height: 100%; cursor: pointer; border-right: 1px solid #eee; }
+        .hex-display { 
+            flex: 1.5; text-align: center; border: none; font-size: 10px; 
+            outline: none; background: transparent; color: #333; width: 50px; line-height: 20px;
+        }
+
+        .footer-text { 
+            background: transparent; padding: 25px 0; text-align: center; 
+            font-size: 9px; color: #bbb; letter-spacing: 1px; width: 100%;
+        }
+
+        .canvas-area { 
+            flex: 1; background: #f0f0f0; display: flex; 
+            align-items: center; justify-content: center; position: relative; overflow: hidden; 
+        }
+        
+        canvas { 
+            display: block; background: transparent; border: none; outline: none; box-shadow: none;
+            image-rendering: -webkit-optimize-contrast;
+        }
+        #upload { display: none; }
+    </style>
+</head>
+<body>
+<div class="sidebar">
+    <div class="sidebar-content">
+        <div class="panel">
+            <div class="ctrl">
+                <label>
+                    1. 轮廓图像源 (SOURCE)
+                    <div class="ratio-wrapper" id="ratioSelectors">
+                        <span class="ratio-text" data-ratio="3:4">3:4</span>
+                        <span class="ratio-text active" data-ratio="fill">FULL</span>
+                    </div>
+                </label>
+                <div class="file-input-wrapper">
+                    <!-- 修改点 1: 上传按钮中英文显示 -->
+                    <div class="file-input-container" onclick="document.getElementById('upload').click()" id="fileNameDisplay">上传图像 UPLOAD IMAGE</div>
+                    <div class="btn-clear" id="btnClear" onclick="clearImage()">✕</div>
+                </div>
+                <input type="file" id="upload" accept="image/png, image/jpeg">
+            </div>
+
+            <div class="ctrl">
+                <label>2. 渐变配置 (GRADIENT CONFIG)</label>
+                <div class="color-row">
+                    <div class="color-unit">
+                        <label>背景 (BG)</label>
+                        <div class="bg-ctrl-group">
+                            <input type="color" id="colorBg" value="#000000" style="display:none" oninput="handleColorInput('colorBg')">
+                            <div id="colorBgBlock" class="color-block" style="background-color: #000000;" onclick="document.getElementById('colorBg').click()"></div>
+                            <input type="text" class="hex-display" id="hexBg" value="#000000" oninput="handleHexInput('hexBg')">
+                        </div>
+                    </div>
+                    <div class="color-unit">
+                        <label>中心弥散 (MID)</label>
+                        <div class="bg-ctrl-group">
+                            <input type="color" id="colorFg" value="#94E4D1" style="display:none" oninput="handleColorInput('colorFg')">
+                            <div id="colorFgBlock" class="color-block" style="background-color: #94E4D1;" onclick="document.getElementById('colorFg').click()"></div>
+                            <input type="text" class="hex-display" id="hexFg" value="#94E4D1" oninput="handleHexInput('hexFg')">
+                        </div>
+                    </div>
+                </div>
+                <div class="color-row extra-colors" id="extraColorRow">
+                    <div class="color-unit">
+                        <label>左侧色 (LEFT)</label>
+                        <div class="bg-ctrl-group">
+                            <input type="color" id="colorLeft" value="#00FF00" style="display:none" oninput="handleColorInput('colorLeft')">
+                            <div id="colorLeftBlock" class="color-block" style="background-color: #00FF00;" onclick="document.getElementById('colorLeft').click()"></div>
+                            <input type="text" class="hex-display" id="hexLeft" value="#00FF00" oninput="handleHexInput('hexLeft')">
+                        </div>
+                    </div>
+                    <div class="color-unit">
+                        <label>右侧色 (RIGHT)</label>
+                        <div class="bg-ctrl-group">
+                            <input type="color" id="colorRight" value="#FFFF00" style="display:none" oninput="handleColorInput('colorRight')">
+                            <div id="colorRightBlock" class="color-block" style="background-color: #FFFF00;" onclick="document.getElementById('colorRight').click()"></div>
+                            <input type="text" class="hex-display" id="hexRight" value="#FFFF00" oninput="handleHexInput('hexRight')">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ctrl">
+                <label>识别阈值 (THRESHOLD) <span id="val-threshold">220</span></label>
+                <input type="range" id="threshold" min="0" max="255" value="220">
+                
+                <label>横向渐变宽度 (WIDTH-X) <span id="val-widthX">35</span></label>
+                <input type="range" id="widthX" min="0" max="150" value="35">
+
+                <label>纵向渐变宽度 (WIDTH-Y) <span id="val-widthY">5</span></label>
+                <input type="range" id="widthY" min="0" max="60" value="5">
+
+                <label>弥散柔和度 (SOFTNESS) <span id="val-softness">30</span></label>
+                <input type="range" id="softness" min="1" max="100" value="30">
+
+                <label>色彩浓度 (DENSITY) <span id="val-density">85</span></label>
+                <input type="range" id="density" min="10" max="100" value="85">
+
+                <label>图形缩放 (SCALE) <span id="val-graphicScale">0.85</span></label>
+                <input type="range" id="graphicScale" min="0.1" max="2.0" step="0.01" value="0.85">
+
+                <label>图形膨胀 (DILATION) <span id="val-dilation">20</span></label>
+                <input type="range" id="dilation" min="-50" max="50" value="20">
+
+                <label>左右错位 (OFFSET-X) <span id="val-offsetX">0</span></label>
+                <input type="range" id="offsetX" min="0" max="800" value="0">
+
+                <label class="toggle-ctrl">
+                    <input type="checkbox" id="hideOverlap" onchange="requestRender(false)">
+                    <span class="toggle-text">隐藏被遮挡部分 (HIDE OVERLAP)</span>
+                    <span style="font-size: 10px; color: #ccc;">ON/OFF</span>
+                </label>
+            </div>
+
+            <div class="ctrl">
+                <label>3. 导出 (EXPORT)</label>
+                <div class="export-group">
+                    <button class="btn-white" onclick="exportHQ('jpg')">JPG (A3印刷)</button>
+                    <button class="btn-white" onclick="exportHQ('png')">PNG (透明底)</button>
+                    <!-- 修改点 2: 随机色彩按钮中英文显示 -->
+                    <button class="btn-random" onclick="randomizeRichPalettes()">随机色彩 RANDOM PALETTE</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="footer-text">2026 Design by Type Play Studio.</div>
+</div>
+<div class="canvas-area" id="canvasArea"><canvas id="canvas"></canvas></div>
+
+<script>
+    let cvReady = false, sourceMat = null, basePolygons = [], needsRecalc = true, renderPending = false;
+    const canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d'), upload = document.getElementById('upload');
+    const canvasArea = document.getElementById('canvasArea');
+    const ratioTexts = document.querySelectorAll('.ratio-text');
+    let currentRatioType = 'fill';
+    
+    const PREVIEW_BASE_SIZE = 1024; 
+    const LOGIC_BASE_SIZE = 2400; 
+
+    const offCanvas = document.createElement('canvas');
+    const offCtx = offCanvas.getContext('2d');
+
+    function cvLoaded() { cvReady = true; }
+
+    ratioTexts.forEach(el => {
+        el.onclick = () => {
+            ratioTexts.forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            currentRatioType = el.getAttribute('data-ratio');
+            resizeCanvas();
+        };
+    });
+
+    const richPalettes = [
+        { mid: "#FF00FF", left: "#00FFFF", right: "#FFFF00" }, { mid: "#00FF66", left: "#FF00FF", right: "#0066FF" },
+        { mid: "#FF3300", left: "#FFFF00", right: "#FF00CC" }, { mid: "#1A00FF", left: "#00FFDD", right: "#FF0066" },
+        { mid: "#DFFF00", left: "#FF00FF", right: "#007FFF" }, { mid: "#FF0055", left: "#00FF44", right: "#0033FF" },
+        { mid: "#9D00FF", left: "#FF6600", right: "#00FFCC" }, { mid: "#00FFCC", left: "#9D00FF", right: "#FF0077" },
+        { mid: "#FFD700", left: "#FF0033", right: "#0011FF" }, { mid: "#39FF14", left: "#FF00FF", right: "#FF4D00" },
+        { mid: "#FF0000", left: "#00FF00", right: "#FFFF00" }, { mid: "#00FFFF", left: "#FF00FF", right: "#FF9900" },
+        { mid: "#FF0088", left: "#00FF00", right: "#00CCFF" }, { mid: "#CCFF00", left: "#FF1493", right: "#0000FF" },
+        { mid: "#FF8C00", left: "#00FA9A", right: "#9400D3" }, { mid: "#00BFFF", left: "#FFD700", right: "#FF00FF" },
+        { mid: "#ADFF2F", left: "#FF00FF", right: "#00CED1" }, { mid: "#FF1493", left: "#7FFF00", right: "#1E90FF" },
+        { mid: "#7B68EE", left: "#32CD32", right: "#FF4500" }, { mid: "#FF4500", left: "#00CED1", right: "#FFFF00" },
+        { mid: "#00FF7F", left: "#FF00FF", right: "#00CCFF" }, { mid: "#FFDAB9", left: "#FF0066", right: "#00FFCC" },
+        { mid: "#E6E6FA", left: "#FF4500", right: "#32CD32" }, { mid: "#F08080", left: "#00FFFF", right: "#FFD700" },
+        { mid: "#00FA9A", left: "#FF00FF", right: "#FF8C00" }, { mid: "#FF6347", left: "#40E0D0", right: "#FFD700" },
+        { mid: "#DA70D6", left: "#32CD32", right: "#FFD700" }, { mid: "#20B2AA", left: "#FF1493", right: "#FFFF00" },
+        { mid: "#F4A460", left: "#00FF00", right: "#FF00FF" }, { mid: "#00FF00", left: "#FF0066", right: "#00BFFF" }
+    ];
+
+    function randomizeRichPalettes() {
+        const palette = richPalettes[Math.floor(Math.random() * richPalettes.length)];
+        const update = (id, val) => {
+            const el = document.getElementById(id);
+            const block = document.getElementById(id + 'Block');
+            const hex = document.getElementById(id.replace('color', 'hex'));
+            if(el) el.value = val;
+            if(block) block.style.backgroundColor = val;
+            if(hex) hex.value = val.toUpperCase();
+        };
+        update('colorFg', palette.mid);
+        update('colorLeft', palette.left);
+        update('colorRight', palette.right);
+        requestRender(false);
+    }
+
+    function resizeCanvas() {
+        const isFill = currentRatioType === 'fill';
+        const areaW = canvasArea.clientWidth;
+        const areaH = canvasArea.clientHeight;
+        let targetW = areaW;
+        let targetH = areaH;
+        let ratio = isFill ? (areaW / areaH) : (3 / 4);
+        if (!isFill) {
+            targetW = areaW * 0.88;
+            targetH = areaH * 0.88;
+        }
+        let dW, dH;
+        if (targetW / targetH > ratio) { dH = targetH; dW = dH * ratio; } 
+        else { dW = targetW; dH = dW / ratio; }
+        canvas.style.width = Math.floor(dW) + 'px'; 
+        canvas.style.height = Math.floor(dH) + 'px';
+        canvas.width = PREVIEW_BASE_SIZE; 
+        canvas.height = PREVIEW_BASE_SIZE / ratio;
+        requestRender(true);
+    }
+    window.onresize = resizeCanvas;
+
+    function handleHexInput(id) { 
+        let val = document.getElementById(id).value; 
+        if(/^#[0-9A-F]{6}$/i.test(val)) { 
+            const pickId = id.replace('hex', 'color'); 
+            document.getElementById(pickId).value = val; 
+            document.getElementById(pickId + 'Block').style.backgroundColor = val; 
+            requestRender(false); 
+        } 
+    }
+    function handleColorInput(id) { 
+        const val = document.getElementById(id).value; 
+        const hexId = id.replace('color', 'hex'); 
+        document.getElementById(hexId).value = val.toUpperCase(); 
+        document.getElementById(id + 'Block').style.backgroundColor = val; 
+        requestRender(false); 
+    }
+
+    upload.onchange = (e) => {
+        const file = e.target.files[0]; if (!file) return;
+        document.getElementById('fileNameDisplay').textContent = file.name;
+        document.getElementById('btnClear').style.display = 'block';
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const img = new Image(); img.onload = () => {
+                if(sourceMat) sourceMat.delete();
+                const tempCanvas = document.createElement('canvas'); 
+                const maxProcessSize = 800; 
+                let scale = Math.min(1, maxProcessSize / Math.max(img.width, img.height));
+                tempCanvas.width = img.width * scale; tempCanvas.height = img.height * scale;
+                tempCanvas.getContext('2d').drawImage(img, 0, 0, tempCanvas.width, tempCanvas.height); 
+                sourceMat = cv.imread(tempCanvas); 
+                needsRecalc = true;
+                requestRender(true);
+            }; img.src = ev.target.result;
+        }; reader.readAsDataURL(file);
+    };
+
+    function clearImage() {
+        if(sourceMat) { sourceMat.delete(); sourceMat = null; }
+        upload.value = '';
+        // 同步修改清空后的显示文字
+        document.getElementById('fileNameDisplay').textContent = '上传图像 UPLOAD IMAGE';
+        document.getElementById('btnClear').style.display = 'none';
+        basePolygons = []; requestRender(true);
+    }
+
+    ['threshold', 'widthX', 'widthY', 'softness', 'density', 'graphicScale', 'dilation', 'offsetX'].forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.oninput = function() { 
+            const val = this.value;
+            document.getElementById('val-' + id).textContent = val; 
+            if(id === 'offsetX') document.getElementById('extraColorRow').style.display = parseInt(val) > 0 ? 'grid' : 'none';
+            requestRender(id === 'threshold' || id === 'dilation'); 
+        };
+    });
+
+    function requestRender(recalc = true) { 
+        if (recalc) needsRecalc = true; 
+        if (renderPending) return; 
+        renderPending = true; 
+        requestAnimationFrame(() => { 
+            render(canvas, ctx); 
+            renderPending = false; 
+        }); 
+    }
+
+    function drawPath(targetCtx, pts) {
+        if (pts.length < 3) return;
+        const startMidX = (pts[pts.length - 1].x + pts[0].x) / 2;
+        const startMidY = (pts[pts.length - 1].y + pts[0].y) / 2;
+        targetCtx.moveTo(startMidX, startMidY);
+        for (let i = 0; i < pts.length; i++) {
+            const pCurrent = pts[i]; const pNext = pts[(i + 1) % pts.length];
+            targetCtx.quadraticCurveTo(pCurrent.x, pCurrent.y, (pCurrent.x + pNext.x) / 2, (pCurrent.y + pNext.y) / 2);
+        }
+        targetCtx.closePath();
+    }
+
+    function renderSingleLayer(targetCtx, poly, shift, color, gScale, cw, ch, softness, density, biasX, biasY) {
+        const centerX = cw / 2, centerY = ch / 2;
+        targetCtx.save();
+        targetCtx.globalAlpha = density;
+        targetCtx.beginPath(); 
+        const outerPts = [];
+        for(let i=0; i<poly.length; i++) {
+            outerPts.push({
+                x: centerX + (poly[i].x - centerX) * gScale + shift,
+                y: centerY + (poly[i].y - centerY) * gScale
+            });
+        }
+        drawPath(targetCtx, outerPts); 
+        targetCtx.clip();
+        targetCtx.filter = `blur(${softness}px)`; 
+        targetCtx.fillStyle = color; 
+        targetCtx.strokeStyle = color;
+        targetCtx.beginPath(); 
+        drawPath(targetCtx, outerPts); 
+        let sumX = 0, sumY = 0;
+        for(let i=0; i<outerPts.length; i++) { sumX += outerPts[i].x; sumY += outerPts[i].y; }
+        const localCenterX = sumX / outerPts.length;
+        const localCenterY = sumY / outerPts.length;
+        const innerPts = [];
+        for(let i=0; i<outerPts.length; i++) {
+            innerPts.push({
+                x: localCenterX + (outerPts[i].x - localCenterX) * (1 - biasX),
+                y: localCenterY + (outerPts[i].y - localCenterY) * (1 - biasY)
+            });
+        }
+        drawPath(targetCtx, innerPts); 
+        targetCtx.fill('evenodd'); 
+        targetCtx.lineWidth = softness * 0.8 + (density >= 1.0 ? 3 : 1); 
+        targetCtx.beginPath(); 
+        drawPath(targetCtx, outerPts); 
+        targetCtx.stroke();
+        targetCtx.restore();
+    }
+
+    function render(targetCanvas, targetCtx, isTransparent = false) {
+        const cw = targetCanvas.width, ch = targetCanvas.height;
+        const scaleFactor = cw / LOGIC_BASE_SIZE;
+        if (!isTransparent) { 
+            targetCtx.fillStyle = document.getElementById('colorBg').value; 
+            targetCtx.fillRect(-2, -2, cw + 4, ch + 4); 
+        } else { targetCtx.clearRect(0, 0, cw, ch); }
+        if (!cvReady || !sourceMat) return;
+        offCanvas.width = cw; offCanvas.height = ch;
+        offCtx.clearRect(0, 0, cw, ch);
+        const colorMid = document.getElementById('colorFg').value;
+        const colorL = document.getElementById('colorLeft').value;
+        const colorR = document.getElementById('colorRight').value;
+        const gScale = parseFloat(document.getElementById('graphicScale').value);
+        const softness = parseInt(document.getElementById('softness').value) * (cw / 2500);
+        const density = parseFloat(document.getElementById('density').value) / 100;
+        const offsetX = parseInt(document.getElementById('offsetX').value) * scaleFactor;
+        const isHideIntersect = document.getElementById('hideOverlap').checked;
+        const bX = parseInt(document.getElementById('widthX').value) / 500;
+        const bY = parseInt(document.getElementById('widthY').value) / 500;
+
+        if (needsRecalc) {
+            let thresh = Math.min(parseInt(document.getElementById('threshold').value), 254);
+            let dV = parseInt(document.getElementById('dilation').value);
+            let gray = new cv.Mat(); cv.cvtColor(sourceMat, gray, cv.COLOR_RGBA2GRAY);
+            let scale = Math.min(cw / sourceMat.cols, ch / sourceMat.rows);
+            let nw = Math.floor(sourceMat.cols * scale), nh = Math.floor(sourceMat.rows * scale);
+            let resized = new cv.Mat(); cv.resize(gray, resized, new cv.Size(nw, nh));
+            let binary = cv.Mat.zeros(ch, cw, cv.CV_8U);
+            let roi = binary.roi(new cv.Rect((cw - nw) / 2, (ch - nh) / 2, nw, nh));
+            let tB = new cv.Mat(); cv.threshold(resized, tB, thresh, 255, cv.THRESH_BINARY_INV);
+            
+            cv.medianBlur(tB, tB, 3); 
+
+            if (dV !== 0) {
+                const scaledDV = Math.round(dV * scaleFactor);
+                if(Math.abs(scaledDV) > 0) {
+                    let k = cv.Mat.ones(Math.abs(scaledDV), Math.abs(scaledDV), cv.CV_8U);
+                    if (scaledDV > 0) cv.dilate(tB, tB, k); else cv.erode(tB, tB, k);
+                    k.delete();
+                }
+            }
+            tB.copyTo(roi);
+            let contours = new cv.MatVector(), hierarchy = new cv.Mat(); 
+            cv.findContours(binary, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+            basePolygons = [];
+            for (let i = 0; i < contours.size(); ++i) {
+                let cnt = contours.get(i); 
+                if (cv.contourArea(cnt) < (1200 * scaleFactor * scaleFactor)) { cnt.delete(); continue; }
+                let approx = new cv.Mat(); 
+                cv.approxPolyDP(cnt, approx, (2.0 + Math.abs(dV) * 0.5) * scaleFactor, true);
+                let pts = []; 
+                for (let j = 0; j < approx.rows; ++j) pts.push({ x: approx.data32S[j * 2], y: approx.data32S[j * 2 + 1] });
+                basePolygons.push(pts); approx.delete(); cnt.delete();
+            }
+            gray.delete(); resized.delete(); binary.delete(); tB.delete(); roi.delete(); contours.delete(); hierarchy.delete();
+            needsRecalc = false;
+        }
+
+        offCtx.globalCompositeOperation = 'source-over';
+        if(offsetX > 0) {
+            basePolygons.forEach(poly => { 
+                renderSingleLayer(offCtx, poly, -offsetX, colorL, gScale, cw, ch, softness, density, bX, bY); 
+                renderSingleLayer(offCtx, poly, offsetX, colorR, gScale, cw, ch, softness, density, bX, bY); 
+            });
+            if (isHideIntersect) {
+                offCtx.save(); offCtx.globalCompositeOperation = 'destination-out';
+                basePolygons.forEach(poly => { 
+                    offCtx.beginPath(); 
+                    const centerX = cw/2, centerY = ch/2;
+                    const scaledPts = poly.map(p => ({ 
+                        x: centerX + (p.x - centerX) * gScale, y: centerY + (p.y - centerY) * gScale 
+                    }));
+                    drawPath(offCtx, scaledPts); offCtx.fill(); 
+                }); offCtx.restore();
+            }
+        }
+        basePolygons.forEach(poly => { renderSingleLayer(offCtx, poly, 0, colorMid, gScale, cw, ch, softness, density, bX, bY); });
+        targetCtx.drawImage(offCanvas, 0, 0);
+    }
+
+    function exportHQ(format) { 
+        const out = document.createElement('canvas'); 
+        const longSide = 4961; 
+        const r = canvas.width / canvas.height;
+        if (r > 1) { out.width = longSide; out.height = longSide / r; } 
+        else { out.height = longSide; out.width = longSide * r; }
+        needsRecalc = true; render(out, out.getContext('2d'), format === 'png'); 
+        const link = document.createElement('a'); 
+        link.download = `ART_COLOR_${Date.now()}.${format}`; 
+        link.href = out.toDataURL(format === 'png' ? 'image/png' : 'image/jpeg', 0.95); 
+        link.click(); 
+        needsRecalc = true; requestRender(true);
+    }
+    
+    window.onload = resizeCanvas;
+</script>
+</body>
+</html>
+    
+  </body>
+  
+</html>
